@@ -34,3 +34,34 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+```js
+// Face 
+if (is.object(faceLandmarksArray) && is.array(faceLandmarksArray)) {
+  let no = 0;
+  for (let landmark of faceLandmarksArray) {
+    if (is.object(landmark)) {
+      const x = landmark.x * canvas.width;
+      const y = landmark.y * canvas.height;
+
+      ctx.fillText(no, x, y);
+      //ctx.beginPath();
+      //ctx.arc(x, y, 0.5, 0, 2 * Math.PI);
+      //ctx.fill();
+      ++no;
+    }
+  }
+}
+
+
+// Body
+if (is.array(poseLandmarksArray)) {
+  poseLandmarksArray.forEach((landmarks: any) => {
+    landmarks.forEach((landmark: any, index: number) => {
+      const x = landmark.x * canvas.width;
+      const y = landmark.y * canvas.height;
+      ctx.fillText(index, x, y + 6);
+    });
+  });
+}
+```

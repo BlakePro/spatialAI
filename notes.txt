@@ -1,0 +1,202 @@
+Eres un entrenador de gimnasio, tu tarea es sugerir un listado de 3 ejercicios que pueda el usuario hacer facilmente,
+incluyendo el número de series, las partes del cuerpo involucradas en el movimiento y los grados del ángulo de flexión
+para la siguiente parte del cuerpo: bicep
+
+Cuida que cuando des las instrucciones hazlo de forma muy breve y clara, no utilizando palabras complicadas.
+
+Es importante que te enfoques solamente en ejercicios de la parte del cuerpo que se te menciona, que devuelvas solamente
+los grados del ángulo como número. Además de que el número de repeticiones sea solamente un número y no un rango.
+
+Ejemplo de como debes devolver la respuesta en formato JSON:
+
+[
+{
+"ejercicio": "Nombre del ejercicio",
+"instrucciones": "Parate de frente y estira tus brazos lentamente y muevelos hacia tu cabeza",
+"series": 3,
+"repeticiones": 10,
+"angulo_inicio": 0,
+"angulo_final": 0
+"partes_involucradas": [
+"hombro",
+"codo",
+"muñeca"
+]
+}
+]
+
+
+
+
+/*
+if (base64Image.length > 10) {
+let prompt = 'Determina el género de la persona y saludalo, preguntale que parte del cuerpo le gustaría trabajar';
+const result: any = await streamVision(prompt, base64Image, 'ollama');
+if (result) {
+for await (const delta of readStreamableValue(result)) {
+setTextGeneration(delta);
+}
+}
+}
+*/
+const ejercicios = [
+{
+"ejercicio": "Curl de Bíceps con Mancuernas",
+"instrucciones": "Sujeta una mancuerna en cada mano con los brazos estirados hacia abajo y las palmas hacia adelante.
+Flexiona los codos levantando las mancuernas hacia los hombros. Mantén los codos cerca del cuerpo",
+"series": 4,
+"repeticiones": 12,
+"angulo_inicio": 0,
+"angulo_final": 90
+},
+{
+"ejercicio": "Curl de Bíceps en Banco Inclinado",
+"instrucciones": "Siéntate en un banco inclinado a 45 grados. Sostén una mancuerna en cada mano con los brazos colgando
+y las palmas hacia adelante. Flexiona los codos levantando las mancuernas hacia los hombros. Baja lentamente las
+mancuernas a la posición inicial.",
+"series": 3,
+"repeticiones": 10,
+"angulo_inicio": 0,
+"angulo_final": 90
+},
+{
+"ejercicio": "Curl de Bíceps en Predicador",
+"instrucciones": "Siéntate en un banco predicador y coloca los brazos sobre el soporte con las palmas hacia arriba.
+Sostén una barra con ambas manos y flexiona los codos levantando la barra hacia los hombros. Baja lentamente la barra a
+la posición inicial.",
+"series": 3,
+"repeticiones": 12,
+"angulo_inicio": 0,
+"angulo_final": 90
+}
+];
+
+
+let prompt = 'Give me only the gender for the person. Always return the response in lowercase, example male or female';
+const { object } = await streamVision(prompt, base64Image, 'ollama')
+let toValue = '';
+for await (let strStream of readStreamableValue(object)) {
+toValue += to.string(strStream).trim();
+}
+setGender(toValue);
+
+
+const lastSpokenPosition = useRef<string>('');
+  const speakTimeoutRef = useRef<any>(null);
+    const speak = (position: string) => {
+    if ('speechSynthesis' in window && position !== lastSpokenPosition.current) {
+    clearTimeout(speakTimeoutRef.current);
+    speakTimeoutRef.current = setTimeout(() => {
+    window.speechSynthesis.cancel();
+    const speech = new SpeechSynthesisUtterance(position);
+    speech.lang = 'es-MX';
+    window.speechSynthesis.speak(speech);
+    lastSpokenPosition.current = position;
+    }, 50); // 500ms delay, adjust as needed
+    }
+    };
+
+
+
+
+
+    {/*
+    <div
+      className="w-full md:max-w-72 flex flex-col gap-3 p-3 h-fit md:lg:max-h-98 lg:max-h-max md:overflow-auto rounded-lg text-slate-100 bg-slate-800 md:bg-slate-950/80 shadow-lg shadow-slate-800/20">
+
+      <div className="flex flex-row gap-3 items-start">
+        <div>
+          <Barbell className="size-7 fill-purple-500" />
+        </div>
+        <div className="font-bold">{ejercicios?.[0]?.ejercicio}</div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div>
+          <CardsThree className="size-7 fill-slate-300" />
+        </div>
+        <div>
+          {ejercicios?.[0]?.series} series
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div>
+          <ArrowsCounterClockwise className="size-7 fill-slate-300" />
+        </div>
+        <div>
+          {ejercicios?.[0]?.repeticiones} repeticiones
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div>
+          <Angle className="size-7 fill-slate-300" />
+        </div>
+        <div>
+          Inicia a {ejercicios?.[0]?.angulo_inicio}º
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <div>
+          <VectorTwo className="size-7 fill-slate-300" />
+        </div>
+        <div>
+          Finaliza a {ejercicios?.[0]?.angulo_final}º
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div>
+          <ArticleNyTimes className="size-7 fill-slate-300" />
+        </div>
+        <div>
+          {ejercicios?.[0]?.instrucciones}
+        </div>
+      </div>
+    </div>
+    */}
+
+
+    import { Angle, ArrowsCounterClockwise, ArticleNyTimes, Barbell, Camera, CardsThree, SpinnerGap, VectorTwo } from
+    '@phosphor-icons/react/dist/ssr';
+
+
+    import { useOrientation } from '@uidotdev/usehooks';
+    const orientation = useOrientation();
+
+    [
+    {
+        "ejercicio": "Estiramiento de hombros",
+        "instrucciones": "Parado de frente, estira tus brazos hacia adelante y luego hacia atrás.",
+        "series": 3,
+        "repeticiones": 10,
+        "angulo_inicio": 0,
+        "angulo_final": 0,
+        "partes_involucradas": [
+            "hombro"
+        ]
+    },
+    {
+        "ejercicio": "Elevación lateral de hombros",
+        "instrucciones": "Con los brazos estirados hacia abajo y los codos ligeramente flexionados, levanta tus hombros hacia arriba.",
+        "series": 3,
+        "repeticiones": 12,
+        "angulo_inicio": 0,
+        "angulo_final": 45,
+        "partes_involucradas": [
+            "hombro"
+        ]
+    },
+    {
+        "ejercicio": "Rotación de hombros",
+        "instrucciones": "Estirando los brazos hacia adelante y con los codos flexionados, realiza movimientos laterales.",
+        "series": 3,
+        "repeticiones": 15,
+        "angulo_inicio": -45,
+        "angulo_final": 45,
+        "partes_involucradas": [
+            "hombro"
+        ]
+    }
+]
