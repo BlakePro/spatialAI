@@ -6,8 +6,7 @@
     "build": "next build",
     "start": "APP_ENV=production next build && next start -p 8093",
     "lint": "next lint",
-    "lint:commit": "commitlint --edit $1",
-    "prepare": "husky install"
+    "commit": "sh commit.sh"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.40",
@@ -20,18 +19,19 @@
     "next": "14.2.5",
     "ollama-ai-provider": "^0.11.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "three": "^0.167.1",
-    "zod": "^3.23.8"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.1.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.167.1",
-    "eslint": "^9.8.0",
+    "eslint": "8.57.0",
     "eslint-config-next": "14.2.5",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-unused-imports": "^4.0.1",
     "postcss": "^8.4.40",
+    "prettier": "^3.3.3",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4"
   }

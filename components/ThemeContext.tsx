@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useState, ReactNode, useContext } from 'react';
-import { getThemeColor, to } from '@utilities/tools';
+import { getThemeColor } from '@utilities/tools';
 import { cookie } from '@utilities/cookie';
 
 export type Theme = 'light' | 'dark';
