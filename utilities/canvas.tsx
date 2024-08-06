@@ -1,4 +1,4 @@
-import { get } from '@utilities/tools';
+import { get, is, to } from '@utilities/tools';
 import { calculateAngle2D } from '@utilities/angles';
 
 export const takePicture = (videoRef: any, canvasRef: any): string => {
@@ -15,7 +15,7 @@ export const takePicture = (videoRef: any, canvasRef: any): string => {
 }
 
 
-export const drawLandmarks = (canvasRef: any, poseLandmarksArray: any, handLandmarksArray: any) => { //faceLandmarksArray: any,
+export const drawLandmarks = (canvasRef: any, handLandmarksArray: any, poseLandmarksArray: any) => { //faceLandmarksArray: any,
 
   //let bicepCurlCount = 0;
   //let isCurlingUp = false;
@@ -35,29 +35,6 @@ export const drawLandmarks = (canvasRef: any, poseLandmarksArray: any, handLandm
 
   const angleMode = get.value.get('angleMode');
   const lineMode = get.value.get('lineMode');
-
-  // Hands
-  /*
-  if (is.array(handLandmarksArray)) {
-    handLandmarksArray.forEach((landmarks: any) => {
-
-      // Draw landmarks
-      landmarks.forEach((landmark: any, index: number) => {
-        const x = landmark.x * canvas.width;
-        const y = landmark.y * canvas.height;
-        //ctx.beginPath();
-        //ctx.arc(x, y, 2, 0, 2 * Math.PI); // Draw a circle for each landmark
-        //ctx.stroke();
-
-        if (index == 8) {
-          let xPos = to.truncate(x, 1);
-          let yPos = to.truncate(y, 1);
-          ctx.fillText(`x: ${xPos} --- y: ${yPos}`, x, y);
-        } //else ctx.fillText(index, x, y);
-      });
-    });
-  }
-  */
 
   const posePersonLandmarks = poseLandmarksArray?.[0];
 
@@ -104,6 +81,20 @@ export const drawLandmarks = (canvasRef: any, poseLandmarksArray: any, handLandm
 
 
   if (lineMode == '1') {
+
+    if (is.array(handLandmarksArray)) {
+      handLandmarksArray.forEach((landmarks: any) => {
+        landmarks.forEach((landmark: any, index: number) => {
+          const x = landmark.x * canvas.width;
+          const y = landmark.y * canvas.height;
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, 2 * Math.PI);
+          ctx.stroke();
+          ctx.fillText(`${index}`, x, y)
+        });
+      });
+    }
+
     // ----------------------------  LEFT SIDE ----------------------------
 
     ctx.beginPath();

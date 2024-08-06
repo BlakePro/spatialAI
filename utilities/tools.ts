@@ -230,6 +230,21 @@ export const to = {
 };
 
 export const get = {
+  coordinates: (matrixString: string): { x: number, y: number } => {
+    // Use a regular expression to extract the numbers from the matrix string
+    const regex = /matrix\(([^,]+),\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/;
+    const match = matrixString.match(regex);
+
+    if (match) {
+      // The x value is the 5th captured group, and the y value is the 6th captured group
+      const x = parseFloat(match[5]);
+      const y = parseFloat(match[6]);
+      return { x, y };
+    } else {
+      // Return null if the string is not a valid matrix
+      return { x: 0, y: 0 };
+    }
+  },
   html: {
     set: (id: string, value: string) => {
       let elem: HTMLElement | null = document.getElementById(id);

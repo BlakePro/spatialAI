@@ -4,7 +4,7 @@ import { GestureRecognizer, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { debounce, get, is, processResponse, to } from '@utilities/tools';
 import { detectHandSide, Position } from '@utilities/positions';
 import { Provider, defaultConstraintsCamera, defaultPixel, defaultSystemPrompt, defautlOptionsLandmarker } from '@utilities/defaults';
-import { Camera, SpinnerGap, GearSix, X, Warning, Sparkle, ChatText, Angle, ArrowsCounterClockwise, ArticleNyTimes, Barbell, CardsThree, VectorTwo } from '@phosphor-icons/react/dist/ssr';
+import { Camera, SpinnerGap, GearSix, X, Warning, Sparkle, Angle, ArrowsCounterClockwise, ArticleNyTimes, Barbell, CardsThree, VectorTwo } from '@phosphor-icons/react/dist/ssr';
 import { streamAction } from '@utilities/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { Modal } from '@components/Modal';
@@ -12,6 +12,8 @@ import { SpeechToTextInput } from '@components/SpeechToText';
 import { Switch } from '@components/Switch';
 import { DotLoader } from '@components/Loading';
 import { drawLandmarks, takePicture } from '@utilities/canvas';
+import { motion } from 'framer-motion';
+import { Card } from '@components/Card';
 
 export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
 
@@ -38,10 +40,11 @@ export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
   const [isAngleMode, setIsAngleMode] = useState<boolean>(false);
   const [isBothHandsMic, setIsBothHandsMic] = useState<boolean>(true);
   const [isLineMode, setIsLineMode] = useState<boolean>(false);
-  const [isCounterMode, setIsCounterMode] = useState<boolean>(false);
-  const [isOpenChat, setIsOpenChat] = useState<boolean>(true);
-  const [isOpenRoutine, setIsOpenRoutine] = useState<boolean>(true);
-  const [timer, setTimer] = useState<any>(null);
+  //const [isCounterMode, setIsCounterMode] = useState<boolean>(false);
+
+  const constraintsRef = useRef<any>(null);
+  const [positionRight, setPositionRight] = useState({ x: 20, y: 20 });
+  const [positionLeft, setPositionLeft] = useState({ x: 20, y: 200 });
 
   const onPicture = () => {
     setTimeout(() => {
@@ -81,20 +84,20 @@ export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
           setIsCameraActive(true);
           setIsStarting(false);
           setIsLoading(false);
-          detectMovement(video, gestureRecognizer, poseLandmarker); // faceLandmarker
+          detectMovement(video, gestureRecognizer, poseLandmarker);
           onPicture();
         });
       }
     } catch (error: any) {
       let message = '';
       if (error.name === 'NotAllowedError') {
-        message = 'Camera access was denied. Please grant permission and try again';
+        message = 'Dale permisos a tu cámara';
       } else if (error.name === 'NotFoundError') {
-        message = 'No camera found on your device';
+        message = 'Al parecer tu dispositivo no tiene cámara';
       } else {
-        message = `Error accessing camera: ${error.message}`;
+        message = `Error al acceder a la cámar: ${error.message}`;
       }
-      setModalData({ title: 'Camera problem!', message });
+      setModalData({ title: '¡Houston, tú cámara!', message });
       setIsOpenModal(true);
       setIsLoading(false);
       setIsCameraActive(false);
@@ -109,8 +112,12 @@ export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
   const debounceText = debounce((text: string) => {
     new Promise(async () => {
       text = text.toLocaleLowerCase();
+      console.log(text);
 
-      setIsCounterMode(text == 'contador');
+      if (text == 'ángulos') {
+        setIsLineMode(!isLineMode);
+        return
+      }
 
       if (!isGeneration) {
         setTextGeneration(<DotLoader />);
@@ -152,14 +159,46 @@ export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
         );
         setRightHand('');
         setLeftHand('');
+        get.value.set('leftHand', '')
+        get.value.set('rightHand', '')
 
         recognitions.gestures.forEach((gesture: any, index: number) => {
           const handSide = handSides[index];
           const gestureName = gesture[0]?.categoryName || '';
 
-          if (handSide === 'left') setLeftHand(gestureName);
-          else if (handSide === 'right') setRightHand(gestureName);
+          if (handSide === 'left') {
+            get.value.set('leftHand', gestureName)
+            setLeftHand(gestureName);
+          } else if (handSide === 'right') {
+            get.value.set('rightHand', gestureName)
+            setRightHand(gestureName);
+          }
         });
+      }
+
+      if (is.array(recognitions?.landmarks)) {
+
+        const valueRightHand = get.value.get('rightHand');
+        const valueLeftHand = get.value.get('leftHand');
+        const canvas: any = canvasRef.current;
+        const { width, height } = canvas.getBoundingClientRect();
+
+        for (let handSide of recognitions?.landmarks) {
+          if (is.array(handSide)) {
+            let index = 0;
+            for (let elem of handSide) {
+              if (index == 8) {
+                const x = (1 - elem.x) * width;
+                const y = (elem.y) * height;
+                const coords = { x, y };
+                console.log('right;', valueRightHand)
+                if (valueRightHand == 'Pointing_Up') setPositionRight(coords);
+                else if (valueLeftHand == 'Pointing_Up') setPositionLeft(coords);
+              }
+              ++index;
+            }
+          }
+        }
       }
       requestAnimationFrame(() => detectMovement(video, gestureRecognizer, poseLandmarker));
     }
@@ -167,39 +206,14 @@ export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
 
   useEffect(() => {
     if (isBothHandsMic && leftHand == 'Open_Palm' && rightHand == 'Open_Palm') setIsListen(!isListen);
-
-    if (textListen != '') {
-      if (leftHand === 'Pointing_Up') {
-        const newTimer = setTimeout(() => {
-          setIsOpenChat(!isOpenChat);
-          setTimer(null);
-        }, 320);
-        setTimer(newTimer);
-      } else {
-        if (timer) {
-          clearTimeout(timer);
-          setTimer(null);
-        }
-      }
-    }
-
-    if (rightHand === 'Pointing_Up') {
-      const newTimer = setTimeout(() => {
-        setIsOpenRoutine(!isOpenRoutine);
-        setTimer(null);
-      }, 320);
-      setTimer(newTimer);
-    } else {
-      if (timer) {
-        clearTimeout(timer);
-        setTimer(null);
-      }
-    }
   }, [leftHand, rightHand])
 
   return (
     <>
       <div className="w-full flex justify-center md:items-center h-screen relative p-3">
+
+        <input type="hidden" id="leftHand" />
+        <input type="hidden" id="rightHand" />
 
         <div className={`${isCameraActive && !isStarting ? '' : 'hidden'}`}>
 
@@ -221,133 +235,112 @@ export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
                   <SpeechToTextInput lang={lang} listen={isListen} isBothHandsMic={isBothHandsMic} onListen={(listen: boolean) => setIsListen(listen)} onText={onText} />
                 </div>
               </div>
+
+              <motion.div className="absolute top-0 w-full h-full" ref={constraintsRef}>
+
+                {textListen == '' ? null :
+                  <Card text="👆🏻" position={positionRight} constraintsRef={constraintsRef} backgroundColor="bg-indigo-500/80">
+                    <div className="flex flex-row gap-3 items-start relative">
+                      <div className="absolute -right-8 -bottom-8">
+                        <div className="size-8 bg-indigo-600 rounded-full">
+                          <img src={picture} alt="Image profile" className="size-8 rounded-full border-2 border-indigo-600 object-cover" style={{ transform: "rotateY(180deg)" }} />
+                        </div>
+                      </div>
+                      <div className="w-full max-h-48 md:max-h-72 md:overflow-auto leading-relaxed whitespace-pre-wrap">
+                        {textListen}
+                      </div>
+                    </div>
+                  </Card>
+                }
+
+                {textGeneration != '' || is.array(routine) ?
+                  <Card text="👆🏻" position={positionLeft} constraintsRef={constraintsRef} backgroundColor="bg-pink-500/80 dark:bg-slate-950/80">
+                    <div className="flex flex-col gap-3 items-start relative text-white">
+
+                      <div className="absolute -right-8 -bottom-8">
+                        <div className="flex items-center justify-center size-8 bg-pink-700 border-2 border-pink-400 rounded-full">
+                          <Sparkle className="size-6 text-white" />
+                        </div>
+                      </div>
+
+                      <div id="textGeneration" className="md:max-h-72 md:overflow-auto leading-relaxed whitespace-pre-wrap">
+                        {textGeneration}
+                      </div>
+
+                      {is.array(routine) ?
+                        <div className="w-full max-w-48 md:max-w-72 flex flex-col gap-3 md:lg:max-h-98 lg:max-h-max md:overflow-auto">
+                          <div className="flex flex-row gap-3">
+                            <div>
+                              <Barbell className="size-7" />
+                            </div>
+                            <div className="font-bold">{routine?.[noRoutine]?.nombre}</div>
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <div>
+                              <ArticleNyTimes className="size-7" />
+                            </div>
+                            <div>
+                              {routine?.[noRoutine]?.instrucciones}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <CardsThree className="size-7" />
+                            </div>
+                            <div>
+                              {routine?.[noRoutine]?.series} series
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <div>
+                              <ArrowsCounterClockwise className="size-7" />
+                            </div>
+                            <div>
+                              {routine?.[noRoutine]?.repeticiones} repeticiones
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <div>
+                              <Angle className="size-7" />
+                            </div>
+                            <div>
+                              Inicia a {routine?.[noRoutine]?.angulo_inicio}º
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <div>
+                              <VectorTwo className="size-7" />
+                            </div>
+                            <div>
+                              Finaliza a {routine?.[noRoutine]?.angulo_final}º
+                            </div>
+                          </div>
+                          <div className="w-full flex justify-center">
+                            <div className="w-fit flex flex-row gap-3 p-2 rounded-lg items-center text-slate-900 dark:text-slate-100 ">
+                              {routine.map((item: any, index: number) => <button type="button" key={index} onClick={onRoutine(index)}
+                                className={`${noRoutine == index ? 'text-white bg-fuchsia-600' : 'text-black dark:text-white bg-slate-200 dark:bg-slate-500'} hover:opacity-70 size-6 rounded-full  flex items-center justify-center`}>{index + 1}</button>)}
+                            </div>
+                          </div>
+                        </div>
+                        : null}
+                    </div>
+                  </Card>
+                  : null}
+              </motion.div>
+
             </div>
 
-            {isCounterMode ?
+            {/*isCounterMode ?
               <div className="absolute w-full top-1/2 flex items-center justify-center">
                 <div id="repetitions" className="size-20 bg-yellow-300/70 text-black rounded-full flex items-center justify-center text-4xl">
                 </div>
               </div>
-              : null}
-
-            <div className={isOpenChat ? "hidden" : "absolute top-3 left-3 z-20"}>
-              <button type="button" onClick={() => setIsOpenChat(true)} className="w-fit bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:opacity-90 backdrop-blur rounded-full p-1.5">
-                <ChatText className="size-7 text-white" />
-              </button>
-            </div>
-
-            <div className={is.array(routine) ? "" : "hidden"}>
-              <div className={isOpenRoutine ? "hidden" : "absolute top-3 right-3 z-20"}>
-                <button type="button" onClick={() => setIsOpenRoutine(true)} className="w-fit bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:opacity-90 backdrop-blur rounded-full p-1.5">
-                  <Barbell className="size-7 text-white" />
-                </button>
-              </div>
-            </div>
-
-            <div className="w-full md:absolute md:top-0 md:z-10 py-3 md:p-3 flex flex-col md:flex-row md:justify-between">
-
-              {isOpenChat ? null : <div className="hidden md:block"></div>}
-
-              <div className={isOpenChat ? "w-full max-w-[97%] md:w-full md:max-w-72 flex flex-col gap-6" : "hidden"}>
-
-                {textListen == '' ? null :
-                  <div className="w-fit py-2 px-3 text-white bg-indigo-500 md:bg-indigo-500/90 rounded-lg flex flex-row gap-3 items-start shadow-lg shadow-slate-800/20 relative">
-                    <div className="absolute -right-4 -bottom-4">
-                      <div className="size-8 bg-indigo-600 rounded-full">
-                        <img src={picture} alt="Image profile" className="size-8 rounded-full border-2 border-indigo-600 object-cover" />
-                      </div>
-                    </div>
-                    <div className="md:max-h-72 md:overflow-auto leading-relaxed whitespace-pre-wrap">
-                      {textListen}
-                    </div>
-                  </div>
-                }
-
-                {textGeneration == '' ? null :
-                  <div className="w-fit py-2 px-3 text-white bg-pink-500 md:bg-pink-500/90 rounded-lg flex flex-row gap-3 items-start shadow-lg shadow-slate-800/20 relative">
-                    <div className="absolute -right-4 -bottom-4">
-                      <div className="flex items-center justify-center size-8 bg-pink-700 border-2 border-pink-400 rounded-full">
-                        <Sparkle className="size-6 text-white" />
-                      </div>
-                    </div>
-                    <div id="textGeneration" className="md:max-h-72 md:overflow-auto leading-relaxed whitespace-pre-wrap">
-                      {textGeneration}
-                    </div>
-                  </div>
-                }
-              </div>
-
-              <div className={isOpenRoutine ? "flex" : "hidden"}>
-                {is.array(routine) ?
-                  <div className="w-full md:max-w-72 flex flex-col gap-3 p-3 md:lg:max-h-98 lg:max-h-max md:overflow-auto rounded-lg text-slate-900 dark:text-slate-100 bg-white md:bg-white/20 dark:bg-slate-800 dark:md:bg-slate-950/80 shadow-lg shadow-slate-800/20">
-
-                    <div className="flex flex-row justify-between items-start">
-                      <div className="flex flex-row gap-3">
-                        <div>
-                          <Barbell className="size-7 fill-purple-500" />
-                        </div>
-                        <div className="font-bold">{routine?.[noRoutine]?.nombre}</div>
-                      </div>
-                      <button type="button" onClick={() => setIsOpenRoutine(false)} className="text-xl text-black dark:text-white hover:opacity-80">
-                        <X />
-                      </button>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <div>
-                        <ArticleNyTimes className="size-7" />
-                      </div>
-                      <div>
-                        {routine?.[noRoutine]?.instrucciones}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <CardsThree className="size-7" />
-                      </div>
-                      <div>
-                        {routine?.[noRoutine]?.series} series
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <div>
-                        <ArrowsCounterClockwise className="size-7" />
-                      </div>
-                      <div>
-                        {routine?.[noRoutine]?.repeticiones} repeticiones
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <div>
-                        <Angle className="size-7" />
-                      </div>
-                      <div>
-                        Inicia a {routine?.[noRoutine]?.angulo_inicio}º
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <div>
-                        <VectorTwo className="size-7" />
-                      </div>
-                      <div>
-                        Finaliza a {routine?.[noRoutine]?.angulo_final}º
-                      </div>
-                    </div>
-
-                    <div className="w-full flex justify-center">
-                      <div className="w-fit flex flex-row gap-3 p-2 rounded-lg items-center text-slate-900 dark:text-slate-100 ">
-                        {routine.map((item: any, index: number) => <button type="button" key={index} onClick={onRoutine(index)}
-                          className={`${noRoutine == index ? 'text-white bg-gradient-to-br from-indigo-500 to-fuchsia-500' : 'text-black dark:text-white bg-slate-200 dark:bg-slate-500'} hover:opacity-70 size-6 rounded-full  flex items-center justify-center`}>{index + 1}</button>)}
-                      </div>
-                    </div>
-                  </div>
-                  : null}
-              </div>
-            </div>
+              : null*/}
           </div>
         </div>
 
@@ -387,8 +380,9 @@ export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
           <Switch id="lineMode" label="Líneas del cuerpo" checked={isLineMode}
             onChange={(bool: boolean) => setIsLineMode(bool)} disabled={false} />
 
-          <Switch id="counterMode" label="Contador de repeticiones" checked={isCounterMode}
+          {/*<Switch id="counterMode" label="Contador de repeticiones" checked={isCounterMode}
             onChange={(bool: boolean) => setIsCounterMode(bool)} disabled={false} />
+            */}
 
           <div className="flex flex-col gap-1">
             <div className="text-white font-semibold">

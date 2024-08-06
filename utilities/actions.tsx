@@ -60,12 +60,12 @@ export async function streamAction(prompt: string, systemPrompt: string, provide
       model: model,
       system: system,
       prompt: prompt,
-      onFinish(props) {
-        console.log('onFinish')
-        //{ text, toolCalls, toolResults, finishReason, usage }
-        console.log(props)
-        // your own logic, e.g. for saving the chat history or recording usage
-      },
+      /* onFinish(props) {
+         console.log('onFinish')
+         //{ text, toolCalls, toolResults, finishReason, usage }
+         console.log(props)
+         // your own logic, e.g. for saving the chat history or recording usage
+       },*/
     });
 
     return createStreamableValue(result.textStream).value;
