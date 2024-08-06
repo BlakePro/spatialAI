@@ -3,19 +3,17 @@ import { streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { ollama } from 'ollama-ai-provider';
 import { createStreamableValue } from 'ai/rsc';
-import { defaultSystemPrompt, defaultSystemPromptResponse } from '@utilities/defaults';
-
-type Provider = 'openai' | 'ollama' | 'ollama-vision';
+import { defaultSystemPrompt, defaultSystemPromptResponse, Provider } from '@utilities/defaults';
 
 export async function streamVision(prompt: string, base64Image: string, provider: Provider) {
   try {
     let model: any = null;
     switch (provider) {
-      case 'openai':
+      case Provider.openai:
         const openai = createOpenAI({ apiKey: process.env.OPENAI_API });
         model = openai('gpt-3.5-turbo');
         break;
-      case 'ollama':
+      case Provider.ollama:
         model = ollama('llava');
         break;
     }
@@ -47,17 +45,16 @@ export async function streamAction(prompt: string, systemPrompt: string, provide
   try {
     let model: any = null;
     switch (provider) {
-      case 'openai':
-        const openai = createOpenAI({ apiKey: process.env.OPENAI_API });
-        model = openai('gpt-3.5-turbo');
+      case Provider.openai:
+        const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        model = openai('gpt-4o-mini');
         break;
-      case 'ollama':
+      case Provider.ollama:
         model = ollama('deepseek-coder-v2'); // deepseek-coder-v2 // llama3.1
         break;
     }
     if (systemPrompt == '') systemPrompt = defaultSystemPrompt;
     const system = `${systemPrompt}. ${defaultSystemPromptResponse}`;
-    console.log(system);
 
     const result = await streamText({
       model: model,
@@ -74,6 +71,6 @@ export async function streamAction(prompt: string, systemPrompt: string, provide
     return createStreamableValue(result.textStream).value;
   } catch (e) {
     console.log(e)
-    return null;
+    return null
   }
 }

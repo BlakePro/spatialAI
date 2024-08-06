@@ -75,7 +75,6 @@ export const calculateAngle3D = (pointA: { x: number, y: number, z: number }, po
   return parseFloat(angleDegrees.toFixed(0));
 }
 
-
 export const angleOfSingleLine = (point1: Point, point2: Point): number => {
   // Calculate angle of a single line
   const xDiff = point2[0] - point1[0];
@@ -84,12 +83,12 @@ export const angleOfSingleLine = (point1: Point, point2: Point): number => {
   return parseFloat(result.toFixed(0));
 }
 
-export const distanceXY = (point1: Point, point2: Point): number => {
+export const euclideanDistance = (point1: Angle, point2: Angle): number => {
   // Euclidean distance between two points point1, point2
-  const diffPoint1 = Math.pow(point1[0] - point2[0], 2);
-  const diffPoint2 = Math.pow(point1[1] - point2[1], 2);
-  const result = Math.sqrt(diffPoint1 + diffPoint2)
-  return parseFloat(result.toFixed(2));
+  const dx = point1.x - point2.x;
+  const dy = point1.y - point2.y;
+  const result = Math.sqrt(dx * dx + dy * dy);
+  return result;
 }
 
 export const pointPosition = (point: Point, linePt1: Point, linePt2: Point): 'left' | 'right' => {

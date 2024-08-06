@@ -1,22 +1,26 @@
 'use client';
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { GestureRecognizer, PoseLandmarker, FaceDetector } from '@mediapipe/tasks-vision';
+import { GestureRecognizer, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { debounce, get, is, processResponse, to } from '@utilities/tools';
 import { detectHandSide, Position } from '@utilities/positions';
-import { defaultConstraintsCamera, defaultPixel, defaultSystemPrompt, defautlOptionsLandmarker } from '@utilities/defaults';
+import { Provider, defaultConstraintsCamera, defaultPixel, defaultSystemPrompt, defautlOptionsLandmarker } from '@utilities/defaults';
 import { Camera, SpinnerGap, GearSix, X, Warning, Sparkle, ChatText, Angle, ArrowsCounterClockwise, ArticleNyTimes, Barbell, CardsThree, VectorTwo } from '@phosphor-icons/react/dist/ssr';
 import { streamAction } from '@utilities/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { Modal } from '@components/Modal';
 import { SpeechToTextInput } from '@components/SpeechToText';
 import { Switch } from '@components/Switch';
-import { calculateAngle2D } from '@utilities/angles';
 import { DotLoader } from '@components/Loading';
+import { drawLandmarks, takePicture } from '@utilities/canvas';
 
-export const CameraPose = (): ReactNode => {
+export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
 
   const videoRef = useRef<any>(null);
   const canvasRef = useRef<any>(null);
+
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [isStarting, setIsStarting] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [leftHand, setLeftHand] = useState<string>('');
   const [rightHand, setRightHand] = useState<string>('');
@@ -26,13 +30,9 @@ export const CameraPose = (): ReactNode => {
   const [noRoutine, setNoRoutine] = useState<number>(0);
   const [routine, setRoutine] = useState<any>([]);
 
-  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
-  const [isStarting, setIsStarting] = useState<boolean>(true);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
+  const [modalData, setModalData] = useState<{ title: string; message: string }>({ title: '', message: '' });
   const [isOpenModal, setIsOpenModal] = useState<boolean>(false);
   const [isOpenModalSettings, setIsOpenModalSettings] = useState<boolean>(false);
-  const [modalData, setModalData] = useState<{ title: string; message: string }>({ title: '', message: '' });
   const [isListen, setIsListen] = useState<boolean>(false);
   const [picture, setPicture] = useState<string>(defaultPixel);
   const [isAngleMode, setIsAngleMode] = useState<boolean>(false);
@@ -43,28 +43,19 @@ export const CameraPose = (): ReactNode => {
   const [isOpenRoutine, setIsOpenRoutine] = useState<boolean>(true);
   const [timer, setTimer] = useState<any>(null);
 
-  const takePicture = (): string => {
-    const video = videoRef?.current;
-    const canvas: any = canvasRef.current;
-    let { width, height } = canvas.getBoundingClientRect();
-    width = width / 2;
-    height = height / 2;
-    const ctx = canvas.getContext('2d');
-    canvas.width = width;
-    canvas.height = height;
-    ctx.drawImage(video, 0, 0, width, height);
-    return canvas.toDataURL('image/png', 1);
-  }
-
   const onPicture = () => {
     setTimeout(() => {
-      const base64 = takePicture();
+      const base64 = takePicture(videoRef, canvasRef);
       setPicture(base64);
     }, 300);
   };
 
   const onStartCamera = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
     e.preventDefault();
+    startCamera();
+  };
+
+  const startCamera = async () => {
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setModalData({
@@ -77,9 +68,8 @@ export const CameraPose = (): ReactNode => {
     try {
       setIsLoading(true);
       const vision = { wasmLoaderPath: 'vision_wasm_internal.js', wasmBinaryPath: 'vision_wasm_internal.wasm' };
-      const [stream, gestureRecognizer, poseLandmarker] = await Promise.all([ // faceLandmarker
+      const [stream, gestureRecognizer, poseLandmarker] = await Promise.all([
         navigator.mediaDevices.getUserMedia(defaultConstraintsCamera),
-        //FaceDetector.createFromOptions(vision, defautlOptionsLandmarker('blaze_face_short_range.tflite', undefined)),
         GestureRecognizer.createFromOptions(vision, defautlOptionsLandmarker('gesture_recognizer.task', 2)),
         PoseLandmarker.createFromOptions(vision, defautlOptionsLandmarker('pose_landmarker_lite.task', undefined))
       ]);
@@ -109,14 +99,14 @@ export const CameraPose = (): ReactNode => {
       setIsLoading(false);
       setIsCameraActive(false);
     }
-  };
+  }
 
   const onText = (text: string) => {
     setTextListen(text);
-    debouncedText(text);
+    debounceText(text);
   };
 
-  const debouncedText = debounce((text: string) => {
+  const debounceText = debounce((text: string) => {
     new Promise(async () => {
       text = text.toLocaleLowerCase();
 
@@ -126,7 +116,7 @@ export const CameraPose = (): ReactNode => {
         setTextGeneration(<DotLoader />);
         let systemPrompt = get.value.get('prompt');
 
-        const result: any = await streamAction(text, systemPrompt, 'ollama');
+        const result: any = await streamAction(text, systemPrompt, Provider.openai);
         if (result) {
           for await (const value of readStreamableValue(result)) {
             setIsGeneration(true);
@@ -137,7 +127,7 @@ export const CameraPose = (): ReactNode => {
             setIsGeneration(false);
           }
         } else {
-          setTextGeneration('Tengo problemas con mi LLM 😥')
+          setTextGeneration('Tengo problemas con mi LLM 😥');
         }
       }
     })
@@ -148,239 +138,13 @@ export const CameraPose = (): ReactNode => {
     setNoRoutine(index);
   }
 
-  let bicepCurlCount = 0;
-  let isCurlingUp = false;
+  const detectMovement = (video: any, gestureRecognizer: any, poseLandmarker: any) => {
 
-
-  const drawLandmarks = (handLandmarksArray: any, poseLandmarksArray: any) => { //faceLandmarksArray: any,
-
-    const canvas: any = canvasRef.current;
-    const { width, height } = canvas.getBoundingClientRect();
-    canvas.width = width;
-    canvas.height = height;
-
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, width, height);
-    ctx.font = "32px serif";
-    ctx.fillStyle = 'white';
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
-
-    const angleMode = get.value.get('angleMode');
-    const lineMode = get.value.get('lineMode');
-
-
-    // Hands
-    /*
-        if (is.array(handLandmarksArray)) {
-          handLandmarksArray.forEach((landmarks: any) => {
-    
-            // Draw landmarks
-            landmarks.forEach((landmark: any, index: number) => {
-              const x = landmark.x * canvas.width;
-              const y = landmark.y * canvas.height;
-              //ctx.beginPath();
-              //ctx.arc(x, y, 2, 0, 2 * Math.PI); // Draw a circle for each landmark
-              //ctx.stroke();
-              ctx.fillText(index, x, y);
-            });
-          });
-        }
-          */
-
-    const posePersonLandmarks = poseLandmarksArray?.[0];
-
-    const noise = posePersonLandmarks?.[0]; // nariz
-
-    const leftWrist = posePersonLandmarks?.[15]; // muñeca
-    const rightWrist = posePersonLandmarks?.[16];
-
-    const leftElbow = posePersonLandmarks?.[13]; // codo
-    const rightElbow = posePersonLandmarks?.[14];
-
-    const leftShoulder = posePersonLandmarks?.[11]; // hombro
-    const rightShoulder = posePersonLandmarks?.[12];
-
-    const leftHip = posePersonLandmarks?.[23]; // cadera
-    const rightHip = posePersonLandmarks?.[24];
-
-    const leftKnee = posePersonLandmarks?.[25]; // rodilla
-    const rightKnee = posePersonLandmarks?.[26];
-
-    const leftHell = posePersonLandmarks?.[29]; // tobillo
-    const rightHell = posePersonLandmarks?.[30];
-
-    const leftToe = posePersonLandmarks?.[31]; // pie
-    const rightToe = posePersonLandmarks?.[32];
-
-    const middleShoulder = {
-      x: (leftShoulder?.x + rightShoulder?.x) / 2,
-      y: (leftShoulder?.x + rightShoulder?.y) / 2,
-      z: (leftShoulder?.z + rightShoulder?.z) / 2
-    };
-
-    let leftAngleFaceShoulder = calculateAngle2D(noise, middleShoulder, leftShoulder);
-
-    let leftAngleBicep = calculateAngle2D(leftShoulder, leftElbow, leftWrist);
-    let leftAngleShoulder = calculateAngle2D(leftWrist, leftShoulder, leftHip);
-    leftAngleShoulder = 180 - leftAngleShoulder;
-    let leftAngleShoulderElbow = calculateAngle2D(leftShoulder, leftElbow, leftWrist);
-    leftAngleShoulderElbow = 180 - leftAngleShoulderElbow;
-
-    let rightAngleBicep = calculateAngle2D(rightShoulder, rightElbow, rightWrist);
-    let rightAngleShoulder = calculateAngle2D(rightWrist, rightShoulder, rightHip);
-    rightAngleShoulder = 180 - rightAngleShoulder;
-    let rightAngleShoulderElbow = calculateAngle2D(rightShoulder, rightElbow, rightWrist);
-    rightAngleShoulderElbow = 180 - rightAngleShoulderElbow;
-
-
-    if (lineMode == '1') {
-      // ----------------------------  LEFT SIDE ----------------------------
-
-      ctx.beginPath();
-      ctx.moveTo(leftHip?.x * canvas.width, leftHip?.y * canvas.height);
-      ctx.lineTo(leftShoulder?.x * canvas.width, leftShoulder?.y * canvas.height);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(leftWrist?.x * canvas.width, leftWrist?.y * canvas.height);
-      ctx.lineTo(leftHip?.x * canvas.width, leftHip?.y * canvas.height);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(leftWrist?.x * canvas.width, leftWrist?.y * canvas.height);
-      ctx.lineTo(leftShoulder?.x * canvas.width, leftShoulder?.y * canvas.height);
-      ctx.stroke();
-
-      // ----------------------------  RIGHT SIDE ----------------------------
-
-      ctx.beginPath();
-      ctx.moveTo(rightHip?.x * canvas.width, rightHip?.y * canvas.height);
-      ctx.lineTo(rightShoulder?.x * canvas.width, rightShoulder?.y * canvas.height);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(rightWrist?.x * canvas.width, rightWrist?.y * canvas.height);
-      ctx.lineTo(rightHip?.x * canvas.width, rightHip?.y * canvas.height);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(rightWrist?.x * canvas.width, rightWrist?.y * canvas.height);
-      ctx.lineTo(rightShoulder?.x * canvas.width, rightShoulder?.y * canvas.height);
-      ctx.stroke();
-
-      // ----------------------------  BOTH SIDE ----------------------------
-
-      ctx.beginPath();
-      ctx.moveTo(leftShoulder?.x * canvas.width, leftShoulder?.y * canvas.height);
-      ctx.lineTo(rightShoulder?.x * canvas.width, rightShoulder?.y * canvas.height);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(noise?.x * canvas.width, noise?.y * canvas.height);
-      ctx.lineTo(
-        middleShoulder?.x * canvas.width,
-        middleShoulder?.y * canvas.height
-      );
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(middleShoulder?.x * canvas.width, middleShoulder?.y * canvas.height);
-      ctx.lineTo(
-        leftShoulder?.x * canvas.width,
-        leftShoulder?.y * canvas.height
-      );
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(middleShoulder?.x * canvas.width, middleShoulder?.y * canvas.height);
-      ctx.lineTo(
-        rightShoulder?.x * canvas.width,
-        rightShoulder?.y * canvas.height
-      );
-      ctx.stroke();
-    }
-
-
-    if (angleMode == '1') {
-
-      // ----------------------------  LEFT SIDE ----------------------------
-
-      ctx.fillText(`💪 ${leftAngleBicep}º`,
-        (leftElbow?.x * canvas.width),
-        40 + (leftElbow?.y * canvas.height)
-      );
-
-      ctx.fillText(`${leftAngleShoulder}º`,
-        ((leftWrist?.x + leftHip?.x) / 2) * canvas.width,
-        ((leftWrist?.y + leftHip?.y) / 2) * canvas.height
-      );
-
-      ctx.fillText(`${leftAngleShoulderElbow}º`,
-        ((leftWrist?.x + leftShoulder?.x) / 2) * canvas.width,
-        ((leftWrist?.y + leftShoulder?.y) / 2) * canvas.height
-      );
-
-      // ----------------------------  RIGHT SIDE ----------------------------
-
-      ctx.fillText(`💪 ${rightAngleBicep}º`,
-        (rightElbow?.x * canvas.width),
-        40 + (rightElbow?.y * canvas.height)
-      );
-
-      ctx.fillText(`${rightAngleShoulder}º`,
-        ((rightWrist?.x + rightHip?.x) / 2) * canvas.width,
-        ((rightWrist?.y + rightHip?.y) / 2) * canvas.height
-      );
-
-      ctx.fillText(`${rightAngleShoulderElbow}º`,
-        ((rightWrist?.x + rightShoulder?.x) / 2) * canvas.width,
-        ((rightWrist?.y + rightShoulder?.y) / 2) * canvas.height
-      );
-
-      // ----------------------------  BOTH SIDE ----------------------------
-
-
-    }
-
-
-    // ----------------------------  COUNTER RIGHT SIDE ----------------------------
-    // Bicep curl counter logic
-    const counterMode = get.value.get('counterMode');
-    if (counterMode == '1') {
-      if (rightWrist && rightShoulder && rightElbow) {
-
-        if (bicepCurlCount <= 10) {
-          if (rightAngleBicep < 6) {
-            // Arm is straight
-            if (isCurlingUp) {
-              isCurlingUp = false;
-              bicepCurlCount++;
-              get.html.set('repetitions', `${bicepCurlCount}`)
-              console.log(`Bicep curl count: ${bicepCurlCount}  - ${rightAngleBicep}º`);
-            }
-          } else if (rightAngleBicep > 90) {
-            // Arm is bent
-            isCurlingUp = true;
-          }
-        } else bicepCurlCount = 0;
-
-      }
-    } else bicepCurlCount = 0;
-
-  };
-
-  // drawLineEyeShoulder(leftEar, leftShoulder, canvas, ctx, 0);
-  //drawLineEyeShoulder(rightEar, rightShoulder, canvas, ctx, -180);
-
-  const detectMovement = (video: any, gestureRecognizer: any, poseLandmarker: any) => { // faceLandmarker: any,
-    //const face = faceLandmarker.detectForVideo(video, performance.now());
     const recognitions = gestureRecognizer.recognizeForVideo(video, performance.now());
     const pose = poseLandmarker.detectForVideo(video, performance.now());
 
-    if (recognitions?.landmarks || pose?.landmarks) { // face?.detections?.[0]?.keypoints ||
-      // const detections = { faceLandmarks: face?.detections?.[0]?.keypoints };
-      drawLandmarks(recognitions?.landmarks, pose?.landmarks); //detections?.faceLandmarks,
+    if (recognitions?.landmarks || pose?.landmarks) {
+      drawLandmarks(canvasRef, recognitions?.landmarks, pose?.landmarks);
 
       if (Array.isArray(recognitions?.landmarks)) {
         const handSides: Position[] = recognitions.landmarks.map((hand: any) =>
@@ -397,7 +161,7 @@ export const CameraPose = (): ReactNode => {
           else if (handSide === 'right') setRightHand(gestureName);
         });
       }
-      requestAnimationFrame(() => detectMovement(video, gestureRecognizer, poseLandmarker)); //faceLandmarker
+      requestAnimationFrame(() => detectMovement(video, gestureRecognizer, poseLandmarker));
     }
   };
 
@@ -431,22 +195,21 @@ export const CameraPose = (): ReactNode => {
         setTimer(null);
       }
     }
-
   }, [leftHand, rightHand])
 
   return (
     <>
-      <div className="w-full flex md:justify-center items-center h-screen relative p-3">
+      <div className="w-full flex justify-center md:items-center h-screen relative p-3">
 
         <div className={`${isCameraActive && !isStarting ? '' : 'hidden'}`}>
-          <div className="relative w-full">
+
+          <div className="relative w-full z-10">
 
             <div className="w-full relative shadow-lg shadow-slate-800/20 rounded-lg">
-              <video ref={videoRef} autoPlay={true} playsInline={true} muted={true} className="rounded-lg" style={{ transform: "rotateY(180deg)" }} />
-              <canvas ref={canvasRef}
-                style={{ transform: "rotateY(180deg)" }}
-                className="absolute top-0 w-full h-full"
-              />
+
+              <video ref={videoRef} autoPlay={true} playsInline={true} muted={true} className="rounded-lg rotate-180" style={{ transform: "rotateY(180deg)" }} />
+              <canvas ref={canvasRef} className="absolute top-0 w-full h-full" style={{ transform: "rotateY(180deg)" }} />
+
               <div className="absolute bottom-3 right-3 z-30">
                 <button type="button" onClick={() => setIsOpenModalSettings(true)} className="w-fit bg-white/10 dark:bg-black/10 hover:bg-white/30 dark:hover:bg-black/30 backdrop-blur rounded-full p-1.5">
                   <GearSix className="size-7 text-white" />
@@ -455,7 +218,7 @@ export const CameraPose = (): ReactNode => {
 
               <div className="w-full absolute bottom-3 z-20">
                 <div className="flex justify-center">
-                  <SpeechToTextInput lang="es-MX" listen={isListen} isBothHandsMic={isBothHandsMic} onListen={(listen: boolean) => setIsListen(listen)} onText={onText} />
+                  <SpeechToTextInput lang={lang} listen={isListen} isBothHandsMic={isBothHandsMic} onListen={(listen: boolean) => setIsListen(listen)} onText={onText} />
                 </div>
               </div>
             </div>
@@ -473,10 +236,12 @@ export const CameraPose = (): ReactNode => {
               </button>
             </div>
 
-            <div className={isOpenRoutine ? "hidden" : "absolute top-3 right-3 z-20"}>
-              <button type="button" onClick={() => setIsOpenRoutine(true)} className="w-fit bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:opacity-90 backdrop-blur rounded-full p-1.5">
-                <Barbell className="size-7 text-white" />
-              </button>
+            <div className={is.array(routine) ? "" : "hidden"}>
+              <div className={isOpenRoutine ? "hidden" : "absolute top-3 right-3 z-20"}>
+                <button type="button" onClick={() => setIsOpenRoutine(true)} className="w-fit bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:opacity-90 backdrop-blur rounded-full p-1.5">
+                  <Barbell className="size-7 text-white" />
+                </button>
+              </div>
             </div>
 
             <div className="w-full md:absolute md:top-0 md:z-10 py-3 md:p-3 flex flex-col md:flex-row md:justify-between">
@@ -521,7 +286,7 @@ export const CameraPose = (): ReactNode => {
                         <div>
                           <Barbell className="size-7 fill-purple-500" />
                         </div>
-                        <div className="font-bold">{routine?.[noRoutine]?.ejercicio}</div>
+                        <div className="font-bold">{routine?.[noRoutine]?.nombre}</div>
                       </div>
                       <button type="button" onClick={() => setIsOpenRoutine(false)} className="text-xl text-black dark:text-white hover:opacity-80">
                         <X />
@@ -575,14 +340,13 @@ export const CameraPose = (): ReactNode => {
 
                     <div className="w-full flex justify-center">
                       <div className="w-fit flex flex-row gap-3 p-2 rounded-lg items-center text-slate-900 dark:text-slate-100 ">
-                        {routine.map((item: any, index: number) => <button type="button" key={index} type="button" onClick={onRoutine(index)}
+                        {routine.map((item: any, index: number) => <button type="button" key={index} onClick={onRoutine(index)}
                           className={`${noRoutine == index ? 'text-white bg-gradient-to-br from-indigo-500 to-fuchsia-500' : 'text-black dark:text-white bg-slate-200 dark:bg-slate-500'} hover:opacity-70 size-6 rounded-full  flex items-center justify-center`}>{index + 1}</button>)}
                       </div>
                     </div>
                   </div>
                   : null}
               </div>
-
             </div>
           </div>
         </div>
@@ -590,7 +354,7 @@ export const CameraPose = (): ReactNode => {
         <div className={isStarting ? 'flex items-center' : 'hidden'}>
           <div className="group relative w-fit transition-transform duration-300 active:scale-95">
             <button type="button" onClick={onStartCamera} disabled={isLoading} className="relative z-10 rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 p-1 duration-300 group-hover:scale-110">
-              <span className="block rounded-full p-6 md:p-10 font-semibold text-slate-100 duration-300 group-hover:text-slate-50 bg-slate-950/10 dark:bg-slate-950/80">
+              <span className="block rounded-full p-6 md:p-10 font-semibold text-slate-100 duration-300 group-hover:text-slate-50 dark:bg-slate-950/60">
                 {isLoading ?
                   <SpinnerGap className="size-24 fill-white-50/90 animate-spin" /> :
                   <Camera weight="fill" className="size-16 md:size-20 fill-white" />
@@ -625,6 +389,24 @@ export const CameraPose = (): ReactNode => {
 
           <Switch id="counterMode" label="Contador de repeticiones" checked={isCounterMode}
             onChange={(bool: boolean) => setIsCounterMode(bool)} disabled={false} />
+
+          <div className="flex flex-col gap-1">
+            <div className="text-white font-semibold">
+              Lenguaje del habla
+            </div>
+            <select id="languageSelect" defaultValue={lang} className="w-full text-black dark:text-white border border-slate-400 bg-slate-200/60 dark:bg-slate-900/60 dark:border-slate-900 rounded-md p-3 outline-none">
+              <option value="en-US">English (United States)</option>
+              <option value="en-GB">English (United Kingdom)</option>
+              <option value="en-AU">English (Australia)</option>
+              <option value="en-CA">English (Canada)</option>
+              <option value="en-IN">English (India)</option>
+              <option value="es-ES">Spanish (Spain)</option>
+              <option value="es-MX">Spanish (Mexico)</option>
+              <option value="es-AR">Spanish (Argentina)</option>
+              <option value="es-CO">Spanish (Colombia)</option>
+              <option value="es-US">Spanish (United States)</option>
+            </select>
+          </div>
 
           <div className="flex flex-col gap-1">
             <div className="text-white font-semibold">

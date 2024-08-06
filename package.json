@@ -1,7 +1,6 @@
 {
-  "name": "rehaibilita",
-  "version": "0.1.0",
-  "private": true,
+  "name": "spatialai",
+  "version": "1.0.0",
   "scripts": {
     "dev": "APP_ENV=development next dev --turbo -p 8093  --experimental-https",
     "build": "next build",
@@ -11,29 +10,29 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^0.0.36",
+    "@ai-sdk/openai": "^0.0.40",
     "@headlessui/react": "^2.1.2",
     "@mediapipe/tasks-vision": "^0.10.14",
     "@phosphor-icons/react": "^2.1.7",
     "@uidotdev/usehooks": "^2.4.1",
-    "ai": "^3.2.22",
-    "framer-motion": "^11.3.8",
+    "ai": "^3.3.0",
+    "framer-motion": "^11.3.21",
     "next": "14.2.5",
-    "ollama-ai-provider": "^0.10.0",
-    "react": "^18",
-    "react-dom": "^18",
-    "three": "^0.166.1",
+    "ollama-ai-provider": "^0.11.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.167.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "@types/three": "^0.166.0",
-    "eslint": "^8",
+    "@types/node": "^22.1.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.167.1",
+    "eslint": "^9.8.0",
     "eslint-config-next": "14.2.5",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "postcss": "^8.4.40",
+    "tailwindcss": "^3.4.7",
+    "typescript": "^5.5.4"
   }
 }

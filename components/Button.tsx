@@ -9,7 +9,7 @@ const TOGGLE_CLASSES = 'flex items-center gap-1 px-2 py-1.5 transition-colors re
 export const ButtonTheme = (): ReactNode => {
   const { theme, toggleTheme } = useThemeContext();
   return (
-    <div className="relative flex w-fit items-center rounded-full border border-slate-200 dark:border-slate-900">
+    <div className="relative flex w-fit items-center rounded-full bg-white dark:bg-slate-900">
       <button type="button" className={`${TOGGLE_CLASSES} ${theme == 'light' ? ' text-white' : 'text-white'}`} onClick={toggleTheme} >
         <Sun className="relative z-10 text-2xl" />
       </button>

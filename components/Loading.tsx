@@ -1,4 +1,4 @@
-import { Variants, motion } from "framer-motion";
+import { Variants, motion } from 'framer-motion';
 import { ReactNode } from "react";
 
 const variants = {

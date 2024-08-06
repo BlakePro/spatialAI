@@ -1,7 +1,35 @@
-export const getThemeColor = (theme: string) => {
-  let themeColor: string = '#002561';
-  if (theme == 'dark') themeColor = '#000000';
-  return themeColor;
+
+type StorageType = {
+  get: (name: string, defaultValue?: string) => string;
+  set: (name: string, value: string) => void;
+  delete: (name: string) => void;
+};
+
+export const storage: StorageType = {
+  get: (name: string, defaultValue = ''): string => {
+    let str: any = '';
+    try {
+      str = localStorage.getItem(name);
+      if (typeof str !== 'string') str = defaultValue;
+    } catch (e: any) {
+      console.log(e);
+    }
+    return str;
+  },
+  set: (name: string, value: string): void => {
+    try {
+      localStorage.setItem(name, value);
+    } catch (e: any) {
+      console.log(e);
+    }
+  },
+  delete: (name: string): void => {
+    try {
+      localStorage.removeItem(name);
+    } catch (e: any) {
+      console.log(e);
+    }
+  },
 };
 
 export const processResponse = (inputStr: any): { text: string, exercise: [] } => {
@@ -27,10 +55,16 @@ export const processResponse = (inputStr: any): { text: string, exercise: [] } =
   return { text: inputStr, exercise: [] };
 }
 
+export const getThemeColor = (theme: string) => {
+  let themeColor: string = '#002561';
+  if (theme == 'dark') themeColor = '#000000';
+  return themeColor;
+};
+
 export const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export const debounce = (callback: (...args: any[]) => void, delay: number) => {
-  let timer: NodeJS.Timeout;
+  let timer: any;
   return (...args: any[]) => {
     clearTimeout(timer);
     timer = setTimeout(() => {
@@ -65,10 +99,6 @@ export const is = {
 };
 
 export const to = {
-  decodeBase64: (b64: string): string => {
-    if (typeof b64 === 'string') return Buffer.from(b64, 'base64').toString('utf-8');
-    return '';
-  },
   undefined: (str: any, defaultValue = undefined): string | number | undefined => {
     if ((typeof str === 'string' || typeof str === 'number') && str != '') return str;
     return defaultValue;
@@ -230,4 +260,8 @@ export const get = {
       return '';
     },
   }
+}
+
+export const getPreferredLanguage = (header: string): string => {
+  return to.string(header.split(',')?.[0]);
 }

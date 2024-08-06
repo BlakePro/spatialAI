@@ -49,8 +49,14 @@ export const SpeechToTextInput = ({ lang, isBothHandsMic, listen, onListen, onTe
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = lang;
       recognitionRef.current = recognition;
+      recognition.lang = lang;
+
+      const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
+      languageSelect.addEventListener('change', (event: any) => {
+        let langOption = event.target.value;
+        recognition.lang = langOption;
+      });
 
       recognition.onresult = (event: any) => {
         let len = event.results.length;
