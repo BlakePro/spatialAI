@@ -43,6 +43,10 @@ pnpm dev
 
 5. Abre en tu navegador web la siguiente página [https://localhost:8093/](https://localhost:8093/) para ver los resultados
 
+## 🙋🏻 **Proyecto desplegado en Vercel**
+[https://spatial-ai.vercel.app](https://spatial-ai.vercel.app)
+
+
 ## 👨🏻‍💻 **Autor**
 
 [Cristian Yosafat Hernández Ruiz](https://github.com/blakepro)

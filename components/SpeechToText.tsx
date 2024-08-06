@@ -195,7 +195,7 @@ export const SpeechToTextInput = ({ lang, isBothHandsMic, listen, onListen, onTe
       {isListening ? null : isBothHandsMic ? (
         <div className="w-full flex justify-center pb-3">
           <div className="w-fit text-sm py-1 px-3 text-center font-semibold text-slate-900 dark:text-slate-100 group-hover:text-slate-50 bg-white/80 dark:bg-slate-950/80 rounded-lg">
-            Muéstrame tus manos 👋
+            Muéstrame tus manos 👐🏻
           </div>
         </div>
       ) : null}

@@ -191,7 +191,6 @@ export const CameraPose = ({ lang }: { lang: string }): ReactNode => {
                 const x = (1 - elem.x) * width;
                 const y = (elem.y) * height;
                 const coords = { x, y };
-                console.log('right;', valueRightHand)
                 if (valueRightHand == 'Pointing_Up') setPositionRight(coords);
                 else if (valueLeftHand == 'Pointing_Up') setPositionLeft(coords);
               }
