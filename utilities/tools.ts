@@ -262,6 +262,4 @@ export const get = {
   }
 }
 
-export const getPreferredLanguage = (header: string): string => {
-  return to.string(header.split(',')?.[0]);
-}
+export const getPreferredLanguage = (header: string): string => to.string(header.split(',')?.[0]);
