@@ -1,67 +1,48 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# **SpatialAI: Interacción de UI con Gestos y Voz Basado con AI**
 
-## Getting Started
+**¡Explora una nueva era en la interacción digital con SpatialAI!** Proyecto que combina **Next.js**, **MediaPipe**, y **Vercel SDK AI** para ofrecer una interfaz de usuario (UI) revolucionaria que no solo detecta movimientos de las manos, sino que también responde inteligentemente a las preguntas de los usuarios mediante su voz.
 
-First, run the development server:
+## **✨ ¿Qué es SpatialAI?**
+
+SpatialAI es una aplicación web avanzada que utiliza inteligencia artificial para crear una experiencia interactiva única. Aprovechando **MediaPipe** para el procesamiento preciso de imágenes y **Vercel** para un despliegue ágil, SpatialAI ofrece una interacción intuitiva mediante gestos y una capacidad avanzada para responder a consultas de los usuarios.
+
+## **👉🏻 Características Destacadas:**
+
+- **Interacción Natural**: Controla la UI con simples gestos, eliminando la necesidad de dispositivos de entrada tradicionales.
+- **Asistente Inteligente**: AI integrada para comprender y responder a preguntas de los usuarios de manera eficiente.
+- **Tecnología Avanzada**: Precisión en la detección de movimientos y generación de respuestas gracias a AI.
+- **Despliegue Ágil**: Implementado en **Vercel** para garantizar una experiencia fluida y receptiva.
+
+## **⭐ ¿Por Qué Elegir SpatialAI?**
+
+SpatialAI transforma la forma en que interactúas con el entorno digital, combinando una interfaz gestual intuitiva con la capacidad de respuesta inteligente. Esto abre nuevas posibilidades para la accesibilidad y la usabilidad en el diseño de interfaces. Sé parte de la evolución tecnológica y contribuye al futuro de la interacción web con SpatialAI.
+
+## 👨🏻‍💻 **Modo desarrollador**
+
+1. Necesitrás un certificado https de manera local, esto por los permisos de la cámara, entonces utiliza:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+brew install mkcert
+mkcert -install
+mkcert localhost
+```
+
+> Esto generará un archivo de certificado y un archivo de clave en el directorio actual.
+
+2. Instala las dependencias:
+```bash
+pnpm i 
+```
+
+3. Renombra el archivo .env.local.demo a .env.local y pega tu apiKey de OpenAI
+
+4. Ejecuta el proyecto:
+```bash
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Abre en tu navegador web la siguiente página [https://localhost:8093/](https://localhost:8093/) para ver los resultados
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 👨🏻‍💻 **Autor**
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
-
-```js
-// Face 
-if (is.object(faceLandmarksArray) && is.array(faceLandmarksArray)) {
-  let no = 0;
-  for (let landmark of faceLandmarksArray) {
-    if (is.object(landmark)) {
-      const x = landmark.x * canvas.width;
-      const y = landmark.y * canvas.height;
-
-      ctx.fillText(no, x, y);
-      //ctx.beginPath();
-      //ctx.arc(x, y, 0.5, 0, 2 * Math.PI);
-      //ctx.fill();
-      ++no;
-    }
-  }
-}
-
-
-// Body
-if (is.array(poseLandmarksArray)) {
-  poseLandmarksArray.forEach((landmarks: any) => {
-    landmarks.forEach((landmark: any, index: number) => {
-      const x = landmark.x * canvas.width;
-      const y = landmark.y * canvas.height;
-      ctx.fillText(index, x, y + 6);
-    });
-  });
-}
-```
+[Cristian Yosafat Hernández Ruiz](https://github.com/blakepro)
